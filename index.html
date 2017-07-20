@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+<head>
+  <title>Student Grade Table</title>
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+  <script src="script.js"></script>
+  <meta name="viewport" content="initial-scale=1, user-scalable=no">
+</head>
+<body>
+<div class="container">
+  <div class="col-md-12">
+    <!-- only show this element when the user is on desktop -->
+    <h1 class="page-header hidden-xs hidden-sm">Student Grade Table
+      <small class="pull-right">Grade Average : <span class="avgGrade label label-default">0</span></small>
+    </h1>
+    <!-- only show this element when the user gets to a mobile version -->
+    <h3 class="page-header hidden-md hidden-lg">Student Grade Table
+      <small class="row">Grade Average : <span class="avgGrade label label-default">0</span></small>
+    </h3>
+  </div>
+  <div class="student-add-form col-md-3 col-md-push-9">
+    <h4>Add Student</h4>
+    <div class="input-group col-sm-12 form-group">
+      <span class="input-group-addon" id="input-user">
+        <span class="glyphicon glyphicon-user"></span>
+      </span>
+      <input type="text" class="form-control" name="studentName" id="studentName" placeholder="Student Name"
+        aria-describedby="input-user" value="Jason">
+    </div>
+    <div class="input-group col-sm-12 form-group">
+      <span class="input-group-addon" id="input-course">
+        <span class="glyphicon glyphicon-list-alt"></span>
+      </span>
+      <input type="text" class="form-control" name="course" id="course" placeholder="Student Course"
+        aria-describedby="input-course" value="Art">
+    </div>
+    <div class="input-group col-sm-12 form-group">
+      <span class="input-group-addon" id="input-grade">
+        <span class="glyphicon glyphicon-education"></span>
+      </span>
+      <input type="text" class="form-control" name="studentGrade" id="studentGrade" placeholder="Student Grade" aria-describedby="input-grade" value="80">
+    </div>
+    <div class="form-group sgt-buttons">
+      <button type="button" class="btn btn-success" onclick="" id="add-student">Add </button>
+      <button type="button" class="btn btn-default" onclick="" id="cancel-add-student">Clear </button>
+      <!--<button type="button" class="btn btn-primary" onclick="" id="get-data-from-server">Refresh Data </button>-->
+    </div>
+  </div>
+  <div class="student-list-container col-md-9 col-md-pull-3">
+    <table class="student-list table col-sm-10 sol-sm-offset-1">
+      <thead>
+        <tr>
+          <th>Student Name</th>
+          <th>Student Course</th>
+          <th>Grade</th>
+          <th>Operations</th>
+        </tr>
+      </thead>
+      <tbody class="student-list-body">
+        <tr>
+          <td colspan="4">
+            <div class="table-no-data">No data to display. <div class="loading-spinner"></div></div>
+
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="modalError" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h2 class="modal-title">Oops!</h2>
+      </div>
+      <div class="modal-body">
+        <p>Something went wrong...</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
+
