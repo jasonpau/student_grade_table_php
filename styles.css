@@ -27,6 +27,10 @@
     min-width: 110px;
 }
 
+.edit-student {
+  margin-right: 8px;
+}
+
 .loading-spinner,
 .loading-spinner-large {
     border: 3px solid rgba(255,255,255,0.2);

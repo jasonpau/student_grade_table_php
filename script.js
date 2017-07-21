@@ -39,7 +39,8 @@ function App() {
     };
 
     /**
-     * connectWithServer - takes in the API url, any optional student data, and optional jQuery element with the loading indicator
+     * connectWithServer - takes in the API url and any optional student data and attempts to send to server via AJAX call
+     * @params {string, object}
      * @returns {object}
      */
     this.connectWithServer = function(url, data) {
@@ -49,7 +50,7 @@ function App() {
         dataType: 'json',
         timeout: 5000,
         data: data,
-        url: url,
+        url: url
       })
       .always(function(){
         //if (button_clicked) controller.view.reenableButton(button_clicked);
@@ -57,24 +58,31 @@ function App() {
       .fail(function(){
         controller.view.generateErrorModal('It seems there was a server error of some kind! Refresh the page and try again. If the issue persists, contact the website administrator at dev@jasonpau.com.');
       });
-  };
+    };
 
-    // ajax call to send an individual student's updated data to the server
-    // if successful, update local data & then dom
+    /**
+     * addStudentToServer - send an individual student's data to our AJAX call function
+     * If the AJAX call is successful, clear add form and add the new student to local array
+     * @params {string, object}
+     * @returns {object}
+     */
     this.addStudentToServer = function (studentObj) {
       return controller.model.connectWithServer('insert_data.php', studentObj).done(function(response){
         if (controller.view.handlePossibleError(response)) return;
 
         // add the returned new_id property to the student object
         studentObj.id = response.new_id;
-
         controller.view.clearAddStudentForm();
-
-        // if we were able to add to the server DB, also add to our local array
         controller.model.addStudent(studentObj);
       });
     };
 
+    /**
+     * editStudentOnServer - send an individual student's data to our AJAX call function
+     * If the AJAX call is successful, clear add form and add the new student to local array
+     * @params {string, object, number}
+     * @returns {object}
+     */
     this.editStudentOnServer = function (id, studentObj, local_array_index) {
       const data = {
         id: id,
@@ -126,6 +134,7 @@ function App() {
     this.addClickHandlers = function () {
       $('#add-student').on('click', controller.view.addButtonClicked);
       $('#cancel-add-student').on('click', controller.view.cancelClicked);
+      $('.student-list').on('click', '.edit-student', controller.view.editStudent);
       $('.student-list').on('click', '.delete-student', controller.view.deleteStudent);
       //$('#get-data-from-server').on('click', controller.view.refreshDataClicked);
     };
@@ -137,36 +146,13 @@ function App() {
       }
     };
 
-    // this.refreshDataClicked = function () {
-    //   console.log('test');
-    //
-    //   const $table = $('.student-list-body');
-    //   $table.empty();
-    //
-    //   const $row = $('<tr>');
-    //   const $cell = $('<td>').attr('colspan', '4');
-    //   const $loader = $('<div>', {
-    //     class: 'loading-spinner-large'
-    //   });
-    //
-    //   $cell.append($loader);
-    //   $row.append($cell);
-    //   $table.append($row);
-    //
-    //   controller.view.tempDisableButton($(this));
-    //   controller.view.getDataFromServer().then(() => {
-    //     controller.view.reenableButton($(this));
-    //   });
-    //   controller.view.updateData();
-    // };
-
     this.getDataFromServer = function(){
       return controller.model.connectWithServer('get_data.php', null).done(function(response){
         console.log('done was reached after connection: response:', response);
         // if the server isn't able to complete our request, let the user know
         if (controller.view.handlePossibleError(response)) {
           // if on a regular "get all data" request, if there's an error, show a special error on screen
-          controller.view.showConnectionError();
+          controller.view.showTableMessage('Unable to connect to database. Try refreshing the page. If the issue persists, contact dev@jasonpau.com.');
           return;
         }
 
@@ -222,27 +208,75 @@ function App() {
         grade: input_grade.val()
       };
 
+      // TODO we need to determine if this is a new student or an edit of existing
+
       controller.view.tempDisableButton($(this));
-      controller.model.addStudentToServer(student).then(() => {
-        controller.view.updateData();
-        controller.view.reenableButton($(this));
-      });
+
+      if (event.target.hasAttribute('student_id')) { // edit mode
+        const editingStudentId = event.target.getAttribute('editing');
+        controller.model.editStudentOnServer(editingStudentId, student, local_array_index).then(() => {
+          controller.view.updateData();
+          controller.view.reenableButton($(this));
+        });
+      } else { // add mode
+        controller.model.addStudentToServer(student).then(() => {
+          controller.view.updateData();
+          controller.view.reenableButton($(this));
+        });
+      }
     };
 
     /**
      * cancelClicked - Event Handler when user clicks the cancel button, should clear out student form
      */
-    this.cancelClicked = function() {
+    this.cancelClicked = function(){
       controller.view.clearAddStudentForm();
     };
 
     /**
      * clearAddStudentForm - clears out the form values based on inputIds variable
      */
-    this.clearAddStudentForm = function () {
+    this.clearAddStudentForm = function(){
       input_name.val('');
       input_course.val('');
       input_grade.val('');
+    };
+
+    /**
+     * editStudent - event handler that takes the event object and pas
+     */
+    this.editStudent = function(event) {
+      // add edit mode status
+      $('#add-student')
+        .attr('editing', event.target.getAttribute('student_id'))
+        .text('Update Student');
+      const studentData = controller.view.getRowData($(event.target.parentElement.parentElement));
+      controller.view.populateFormData(studentData);
+    };
+
+    /**
+     * outputs a student data object, based on the info from the table row that was clicked
+     */
+    this.getRowData = function(e){
+      console.log('getRowData called: event:', e);
+      return {
+        student_id: e.find('.student_id').text(),
+        student_name: e.find('.student_name').text(),
+        course: e.find('.course').text(),
+        grade: e.find('.grade').text()
+      };
+    };
+
+    /**
+     * receives a student data object and assigns the properties to the form input values
+     */
+    this.populateFormData = function(studentObj) {
+      console.log('populateFormData called');
+
+      //$('#student_id').val(studentObj.student_id);
+      $('#studentName').val(studentObj.student_name);
+      $('#course').val(studentObj.course);
+      $('#studentGrade').val(studentObj.grade);
     };
 
     /**
@@ -258,6 +292,9 @@ function App() {
       // disable the button, remove the student from the server then local data, then reenable button (if deletion unsuccessful)
       controller.view.tempDisableButton($(this));
       controller.model.removeStudentFromServer(student_id, local_array_index).then(() => {
+        if (controller.model.student_array.length === 0) {
+          // let user know there are no students
+        }
         controller.view.updateData();
         controller.view.reenableButton($(this));
       });
@@ -291,8 +328,7 @@ function App() {
      * updateStudentList - loops through global student array and appends each objects data into the student-list-container > list-body
      */
     this.updateStudentList = function () {
-      console.log('we hit updatestudent list');
-      // clear out the list of students in the DOM
+      // clear out the current list of students in the DOM
       $('.student-list tbody').empty();
 
       // goes through the current student array, and adds each one to the DOM
@@ -304,19 +340,20 @@ function App() {
     /**
      * showConnectionError - display connection error message in student list table
      */
-    this.showConnectionError = function () {
+    this.showTableMessage = function(message){
 
-      $('.student-list tbody').empty();
+      const $table = $('.student-list tbody');
+      $table.empty();
 
       const $row = $('<tr>');
       const $cell = $('<td>').attr('colspan', '4');
       const $loader = $('<div>', {
-        text: 'No data to display.'
+        text: message
       });
 
       $cell.append($loader);
       $row.append($cell);
-      $('.student-list tbody').append($row);
+      $table.append($row);
     };
 
     /**
@@ -325,6 +362,13 @@ function App() {
      * @param studentObj
      */
     this.addStudentToDom = function (studentObj) {
+      const $button_edit = $('<button>', {
+        text: 'Edit ',
+        type: 'button',
+        class: 'btn btn-default edit-student',
+        student_id: studentObj.id
+      });
+
       const $button_delete = $('<button>', {
         text: 'Delete ',
         type: 'button',
@@ -333,12 +377,12 @@ function App() {
       });
 
       const $row = $('<tr>');
-      const $cell_name = $('<td>', {text: studentObj.name});
-      const $cell_course = $('<td>', {text: studentObj.course});
-      const $cell_grade = $('<td>', {text: studentObj.grade});
+      const $cell_name = $('<td>', {text: studentObj.name, class: 'student_name'});
+      const $cell_course = $('<td>', {text: studentObj.course, class: 'course'});
+      const $cell_grade = $('<td>', {text: studentObj.grade, class: 'grade'});
       const $cell_delete = $('<td>');
 
-      $cell_delete.append($button_delete);
+      $cell_delete.append($button_edit, $button_delete);
       $row.append($cell_name, $cell_course, $cell_grade, $cell_delete);
       $('.student-list').append($row);
     };
