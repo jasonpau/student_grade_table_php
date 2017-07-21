@@ -56,7 +56,9 @@ function App() {
         //if (button_clicked) controller.view.reenableButton(button_clicked);
       })
       .fail(function(){
+        // if we can't connect with our API
         controller.view.generateErrorModal('It seems there was a server error of some kind! Refresh the page and try again. If the issue persists, contact the website administrator at dev@jasonpau.com.');
+        controller.view.showTableMessage('Unable to connect with server.');
       });
     };
 
@@ -68,6 +70,8 @@ function App() {
      */
     this.addStudentToServer = function (studentObj) {
       return controller.model.connectWithServer('insert_data.php', studentObj).done(function(response){
+
+        // test for database error
         if (controller.view.handlePossibleError(response)) return;
 
         // add the returned new_id property to the student object
@@ -85,7 +89,7 @@ function App() {
      */
     this.editStudentOnServer = function (id, studentObj, local_array_index) {
       const data = {
-        id: id,
+        student_id: id,
         name: studentObj.name,
         course: studentObj.course,
         grade: studentObj.grade
@@ -136,12 +140,11 @@ function App() {
       $('#cancel-add-student').on('click', controller.view.cancelClicked);
       $('.student-list').on('click', '.edit-student', controller.view.editStudent);
       $('.student-list').on('click', '.delete-student', controller.view.deleteStudent);
-      //$('#get-data-from-server').on('click', controller.view.refreshDataClicked);
     };
 
     this.handlePossibleError = function(response){
       if (response.success === false) {
-        controller.view.generateErrorModal(response.error);
+        controller.view.generateErrorModal(response.message);
         return true;
       }
     };
@@ -149,11 +152,13 @@ function App() {
     this.getDataFromServer = function(){
       return controller.model.connectWithServer('get_data.php', null).done(function(response){
         console.log('done was reached after connection: response:', response);
-        // if the server isn't able to complete our request, let the user know
-        if (controller.view.handlePossibleError(response)) {
-          // if on a regular "get all data" request, if there's an error, show a special error on screen
-          controller.view.showTableMessage('Unable to connect to database. Try refreshing the page. If the issue persists, contact dev@jasonpau.com.');
-          return;
+
+        // if we aren't able to connect to the database, throw and error and return
+        if (controller.view.handlePossibleError(response)) return;
+
+        // if we're able to connect to the database, but there is no data...
+        if (!response.data) {
+          controller.view.showTableMessage(response.message);
         }
 
         // wipe the local student array as we're building a fresh copy from the server
@@ -292,9 +297,6 @@ function App() {
       // disable the button, remove the student from the server then local data, then reenable button (if deletion unsuccessful)
       controller.view.tempDisableButton($(this));
       controller.model.removeStudentFromServer(student_id, local_array_index).then(() => {
-        if (controller.model.student_array.length === 0) {
-          // let user know there are no students
-        }
         controller.view.updateData();
         controller.view.reenableButton($(this));
       });
@@ -331,10 +333,15 @@ function App() {
       // clear out the current list of students in the DOM
       $('.student-list tbody').empty();
 
-      // goes through the current student array, and adds each one to the DOM
-      controller.student_array.forEach(function(element){
-        controller.view.addStudentToDom(element);
-      });
+      if (controller.student_array.length === 0) {
+
+        controller.view.showTableMessage('No student data. Try adding a few students using the Add Student form!');
+      } else {
+        // goes through the current student array, and adds each one to the DOM
+        controller.student_array.forEach(function(element){
+          controller.view.addStudentToDom(element);
+        });
+      }
     };
 
     /**
