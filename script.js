@@ -11,9 +11,9 @@ let app = null;
 function App() {
   this.student_array = [];
 
-  const input_name = $('#studentName');
-  const input_course = $('#course');
-  const input_grade = $('#studentGrade');
+  const inputName = $('#studentName');
+  const inputCourse = $('#course');
+  const inputGrade = $('#studentGrade');
 
   this.model = new Model(this);
   this.view = new View(this);
@@ -56,7 +56,9 @@ function App() {
         //if (button_clicked) controller.view.reenableButton(button_clicked);
       })
       .fail(function(){
+        // if we can't connect with our API
         controller.view.generateErrorModal('It seems there was a server error of some kind! Refresh the page and try again. If the issue persists, contact the website administrator at dev@jasonpau.com.');
+        controller.view.showTableMessage('Unable to connect to server.');
       });
     };
 
@@ -68,11 +70,12 @@ function App() {
      */
     this.addStudentToServer = function (studentObj) {
       return controller.model.connectWithServer('insert_data.php', studentObj).done(function(response){
+
+        // test for database error
         if (controller.view.handlePossibleError(response)) return;
 
-        // add the returned new_id property to the student object
-        studentObj.id = response.new_id;
-        controller.view.clearAddStudentForm();
+        // add the returned newId property to the student object
+        studentObj.id = response.newId;
         controller.model.addStudent(studentObj);
       });
     };
@@ -83,9 +86,9 @@ function App() {
      * @params {string, object, number}
      * @returns {object}
      */
-    this.editStudentOnServer = function (id, studentObj, local_array_index) {
+    this.editStudentOnServer = function (id, studentObj, localArrayIndex) {
       const data = {
-        id: id,
+        studentId: id,
         name: studentObj.name,
         course: studentObj.course,
         grade: studentObj.grade
@@ -95,21 +98,21 @@ function App() {
         if (controller.view.handlePossibleError(response)) return;
 
         // edit the same student from the local array
-        controller.student_array[local_array_index] = data;
+        controller.student_array[localArrayIndex] = data;
         controller.view.updateData();
       });
     };
 
     // ajax call to remove the clicked student from the server
     // if successful, also remove student from the local array & DOM
-    this.removeStudentFromServer = function (id, local_array_index) {
-      const data = { student_id: id };
+    this.removeStudentFromServer = function (id, localArrayIndex) {
+      const data = { studentId: id };
 
       return controller.model.connectWithServer('delete_data.php', data).done(function(response){
         if (controller.view.handlePossibleError(response)) return;
 
         // delete the same student from the local array, then update the dom
-        controller.student_array.splice(local_array_index, 1);
+        controller.student_array.splice(localArrayIndex, 1);
       });
     };
 
@@ -132,16 +135,17 @@ function App() {
    =======================================================*/
   function View(controller) {
     this.addClickHandlers = function () {
+      const $studentList = $('.student-list');
       $('#add-student').on('click', controller.view.addButtonClicked);
       $('#cancel-add-student').on('click', controller.view.cancelClicked);
-      $('.student-list').on('click', '.edit-student', controller.view.editStudent);
-      $('.student-list').on('click', '.delete-student', controller.view.deleteStudent);
-      //$('#get-data-from-server').on('click', controller.view.refreshDataClicked);
+      $studentList.on('click', '.edit-student', controller.view.editStudent);
+      $studentList.on('click', '.delete-student', controller.view.deleteStudent);
     };
 
     this.handlePossibleError = function(response){
       if (response.success === false) {
-        controller.view.generateErrorModal(response.error);
+        controller.view.generateErrorModal(response.message);
+        controller.view.showTableMessage(response.message);
         return true;
       }
     };
@@ -149,15 +153,19 @@ function App() {
     this.getDataFromServer = function(){
       return controller.model.connectWithServer('get_data.php', null).done(function(response){
         console.log('done was reached after connection: response:', response);
-        // if the server isn't able to complete our request, let the user know
-        if (controller.view.handlePossibleError(response)) {
-          // if on a regular "get all data" request, if there's an error, show a special error on screen
-          controller.view.showTableMessage('Unable to connect to database. Try refreshing the page. If the issue persists, contact dev@jasonpau.com.');
+
+        // if we aren't able to connect to the database, throw and error and return
+        if (controller.view.handlePossibleError(response)) return;
+
+        // if we're able to connect to the database, but there is no data...
+        if (!response.hasOwnProperty('data')) {
+          controller.view.showTableMessage(response.message);
           return;
         }
 
         // wipe the local student array as we're building a fresh copy from the server
         controller.student_array = [];
+
 
         response.data.forEach(function(student){
           controller.model.addStudent({
@@ -178,49 +186,54 @@ function App() {
     this.addButtonClicked = function () {
 
       // if there isn't anything in the name field, we know to throw an error.
-      if ($.trim(input_name.val()) === '') {
+      if ($.trim(inputName.val()) === '') {
         controller.view.generateErrorModal('Please confirm all fields are filled out correctly and try adding again.');
         return;
       }
 
       // if there isn't anything in the course field, we know to throw an error.
-      if ($.trim(input_course.val()) === '') {
+      if ($.trim(inputCourse.val()) === '') {
         controller.view.generateErrorModal('Please confirm all fields are filled out correctly and try adding again.');
         return;
       }
 
       // quit this function if the grade input isn't a number
-      if (isNaN(parseInt(input_grade.val()))) {
+      if (isNaN(parseInt(inputGrade.val()))) {
         controller.view.generateErrorModal('Please enter a Student Grade. It must be a number between 0 and 100!');
         return;
       }
 
       // assuming it's a number, check to see if it's between 0 and 100
-      if (parseInt(input_grade.val()) > 100 || parseInt(input_grade.val()) < 0) {
+      if (parseInt(inputGrade.val()) > 100 || parseInt(inputGrade.val()) < 0) {
         controller.view.generateErrorModal('Student Grade must be a number between 0 and 100. (Overachieving students with scores above 100 are not tolerated around here.)');
         return;
       }
 
       // create an object that we'll pass into our addStudent function
       const student = {
-        name: input_name.val(),
-        course: input_course.val(),
-        grade: input_grade.val()
+        name: inputName.val(),
+        course: inputCourse.val(),
+        grade: inputGrade.val()
       };
 
       // TODO we need to determine if this is a new student or an edit of existing
 
       controller.view.tempDisableButton($(this));
 
-      if (event.target.hasAttribute('student_id')) { // edit mode
+      if (event.target.hasAttribute('editing')) { // edit mode
         const editingStudentId = event.target.getAttribute('editing');
-        controller.model.editStudentOnServer(editingStudentId, student, local_array_index).then(() => {
+        const localArrayIndex = event.target.getAttribute('local-array-index');
+        controller.model.editStudentOnServer(editingStudentId, student, localArrayIndex).then(() => {
           controller.view.updateData();
+          controller.view.clearAddStudentForm();
           controller.view.reenableButton($(this));
+          $(this).removeAttr('editing').removeAttr('local-array-index');
+          $(this).text('Add');
         });
       } else { // add mode
         controller.model.addStudentToServer(student).then(() => {
           controller.view.updateData();
+          controller.view.clearAddStudentForm();
           controller.view.reenableButton($(this));
         });
       }
@@ -237,19 +250,26 @@ function App() {
      * clearAddStudentForm - clears out the form values based on inputIds variable
      */
     this.clearAddStudentForm = function(){
-      input_name.val('');
-      input_course.val('');
-      input_grade.val('');
+      inputName.val('');
+      inputCourse.val('');
+      inputGrade.val('');
     };
 
     /**
-     * editStudent - event handler that takes the event object and pas
+     * editStudent - event handler that takes the event object and...
      */
     this.editStudent = function(event) {
-      // add edit mode status
+      // add "edit mode" status to our form
       $('#add-student')
-        .attr('editing', event.target.getAttribute('student_id'))
+        .attr('editing', event.target.getAttribute('studentId'))
+        .attr('local-array-index', $(event.target).parents('tr').index())
         .text('Update Student');
+      $('#cancel-add-student')
+        .text('Cancel');
+      $('.student-add-form-title')
+        .text('Edit Student');
+
+      //populate our form with the student data
       const studentData = controller.view.getRowData($(event.target.parentElement.parentElement));
       controller.view.populateFormData(studentData);
     };
@@ -260,8 +280,8 @@ function App() {
     this.getRowData = function(e){
       console.log('getRowData called: event:', e);
       return {
-        student_id: e.find('.student_id').text(),
-        student_name: e.find('.student_name').text(),
+        studentId: e.find('.studentId').text(),
+        studentName: e.find('.studentName').text(),
         course: e.find('.course').text(),
         grade: e.find('.grade').text()
       };
@@ -273,8 +293,8 @@ function App() {
     this.populateFormData = function(studentObj) {
       console.log('populateFormData called');
 
-      //$('#student_id').val(studentObj.student_id);
-      $('#studentName').val(studentObj.student_name);
+      //$('#studentId').val(studentObj.studentId);
+      $('#studentName').val(studentObj.studentName);
       $('#course').val(studentObj.course);
       $('#studentGrade').val(studentObj.grade);
     };
@@ -283,18 +303,15 @@ function App() {
      * deleteStudent - deletes the appropriate student in the array and updates the DOM
      */
     this.deleteStudent = function () {
-      // get the student_id of the one we clicked
-      const student_id = parseInt($(this).attr('student_id'));
+      // get the studentId of the one we clicked
+      const studentId = parseInt($(this).attr('studentId'));
 
       // get the "array" index of the one we clicked
-      const local_array_index = $(this).parents('tr').index();
+      const localArrayIndex = $(this).parents('tr').index();
 
       // disable the button, remove the student from the server then local data, then reenable button (if deletion unsuccessful)
       controller.view.tempDisableButton($(this));
-      controller.model.removeStudentFromServer(student_id, local_array_index).then(() => {
-        if (controller.model.student_array.length === 0) {
-          // let user know there are no students
-        }
+      controller.model.removeStudentFromServer(studentId, localArrayIndex).then(() => {
         controller.view.updateData();
         controller.view.reenableButton($(this));
       });
@@ -331,10 +348,15 @@ function App() {
       // clear out the current list of students in the DOM
       $('.student-list tbody').empty();
 
-      // goes through the current student array, and adds each one to the DOM
-      controller.student_array.forEach(function(element){
-        controller.view.addStudentToDom(element);
-      });
+      if (controller.student_array.length === 0) {
+
+        controller.view.showTableMessage('No student data. Try adding a few students using the Add Student form!');
+      } else {
+        // goes through the current student array, and adds each one to the DOM
+        controller.student_array.forEach(function(element){
+          controller.view.addStudentToDom(element);
+        });
+      }
     };
 
     /**
@@ -362,28 +384,28 @@ function App() {
      * @param studentObj
      */
     this.addStudentToDom = function (studentObj) {
-      const $button_edit = $('<button>', {
-        text: 'Edit ',
+      const $buttonEdit = $('<button>', {
+        text: 'Edit',
         type: 'button',
         class: 'btn btn-default edit-student',
-        student_id: studentObj.id
+        studentId: studentObj.id
       });
 
-      const $button_delete = $('<button>', {
-        text: 'Delete ',
+      const $buttonDelete = $('<button>', {
+        text: 'Delete',
         type: 'button',
         class: 'btn btn-danger delete-student',
-        student_id: studentObj.id
+        studentId: studentObj.id
       });
 
       const $row = $('<tr>');
-      const $cell_name = $('<td>', {text: studentObj.name, class: 'student_name'});
-      const $cell_course = $('<td>', {text: studentObj.course, class: 'course'});
-      const $cell_grade = $('<td>', {text: studentObj.grade, class: 'grade'});
-      const $cell_delete = $('<td>');
+      const $cellName = $('<td>', {text: studentObj.name, class: 'studentName'});
+      const $cellCourse = $('<td>', {text: studentObj.course, class: 'course'});
+      const $cellGrade = $('<td>', {text: studentObj.grade, class: 'grade'});
+      const $cellDelete = $('<td>');
 
-      $cell_delete.append($button_edit, $button_delete);
-      $row.append($cell_name, $cell_course, $cell_grade, $cell_delete);
+      $cellDelete.append($buttonEdit, $buttonDelete);
+      $row.append($cellName, $cellCourse, $cellGrade, $cellDelete);
       $('.student-list').append($row);
     };
   }

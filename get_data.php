@@ -26,7 +26,8 @@ if (mysqli_num_rows($result) > 0) {
   $output['message'] = 'Data received from database!';
   $output['success'] = true;
 } else {
-  $output['error'] = 'No data returned.';
+  $output['message'] = 'No students in database.';
+  $output['success'] = true;
 }
 
 sleep(1);

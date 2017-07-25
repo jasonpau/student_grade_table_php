@@ -9,10 +9,10 @@ $output = [
 require_once('mysql_connect.php');
 require_once('mysql_conn_error_handler.php');
 
-// grab the submitted data and store in variables for easy access
-$name = $_POST['name'];
-$course = $_POST['course'];
-$grade = $_POST['grade'];
+// grab the submitted data, trim leading/trailing whitespace, sanitize, and store in variables for easy access
+$name = filter_var(trim ($_POST['name']), FILTER_SANITIZE_STRING);
+$course = filter_var(trim ($_POST['course']), FILTER_SANITIZE_STRING);
+$grade = filter_var(trim ($_POST['grade']), FILTER_SANITIZE_NUMBER_INT);
 
 $query = "
 INSERT INTO grades (name, course, grade)
@@ -26,7 +26,7 @@ if (mysqli_affected_rows($conn)) {
   $output['new_id'] = mysqli_insert_id($conn);
   $output['success'] = true;
 } else {
-  $output['error'] = 'Unable to insert data.';
+  $output['message'] = 'Unable to insert data.';
 }
 
 sleep(1);
