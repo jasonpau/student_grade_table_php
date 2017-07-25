@@ -6,7 +6,7 @@ require_once('mysql_connect.php');
 require_once('mysql_conn_error_handler.php');
 
 // grab the submitted data, trim leading/trailing whitespace, sanitize, and store in variables for easy access
-$id = filter_var(trim ($_POST['student_id']), FILTER_SANITIZE_NUMBER_INT);
+$id = filter_var(trim ($_POST['studentId']), FILTER_SANITIZE_NUMBER_INT);
 $name = filter_var(trim ($_POST['name']), FILTER_SANITIZE_STRING);
 $course = filter_var(trim ($_POST['course']), FILTER_SANITIZE_STRING);
 $grade = filter_var(trim ($_POST['grade']), FILTER_SANITIZE_NUMBER_INT);

@@ -6,7 +6,7 @@ require_once('mysql_connect.php');
 require_once('mysql_conn_error_handler.php');
 
 // grab the submitted id, convert it to an integer (or 0 if it is unable)
-$id = filter_var($_POST['student_id'], FILTER_SANITIZE_NUMBER_FLOAT);
+$id = filter_var($_POST['studentId'], FILTER_SANITIZE_NUMBER_FLOAT);
 
 $query = "DELETE FROM grades WHERE id = $id";
 

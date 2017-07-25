@@ -43,6 +43,7 @@
     animation: spin 1s linear infinite;
     display: inline-block;
     vertical-align: middle;
+    margin-left: 5px;
 }
 
 .loading-spinner-large {
