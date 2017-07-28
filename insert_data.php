@@ -14,12 +14,16 @@ $name = filter_var(trim ($_POST['name']), FILTER_SANITIZE_STRING);
 $course = filter_var(trim ($_POST['course']), FILTER_SANITIZE_STRING);
 $grade = filter_var(trim ($_POST['grade']), FILTER_SANITIZE_NUMBER_INT);
 
-$query = "
-INSERT INTO grades (name, course, grade)
-   VALUES
-   ('$name', '$course', '$grade')";
+// if grade is NOT a number, throw an error and exit
+if (!is_numeric($grade) || empty($name) || empty($course)) {
+  $output['message'] = 'Input data is either missing or improperly formatted.';
+  print(json_encode($output));
+  exit();
+}
 
-$result = mysqli_query($conn, $query);
+$statement = $conn->prepare("INSERT INTO grades (name, course, grade) VALUES (?, ?, ?)");
+$statement->bind_param("ssi", $name, $course, $grade);
+$statement->execute();
 
 if (mysqli_affected_rows($conn)) {
   $output['message'] = 'Data added to database!';
