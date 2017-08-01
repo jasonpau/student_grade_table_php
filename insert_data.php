@@ -6,6 +6,7 @@ $output = [
   'success' => false
 ];
 
+// establish connection with our database
 require_once('mysql_connect.php');
 require_once('mysql_conn_error_handler.php');
 
@@ -33,7 +34,6 @@ if (mysqli_affected_rows($conn)) {
   $output['message'] = 'Unable to insert data.';
 }
 
-sleep(1);
 print(json_encode($output));
 
 ?>

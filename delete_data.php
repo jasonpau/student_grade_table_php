@@ -30,7 +30,6 @@ if (mysqli_affected_rows($conn)) {
   $output['message'] = 'Unable to delete student.';
 }
 
-sleep(1);
 print(json_encode($output));
 
 ?>

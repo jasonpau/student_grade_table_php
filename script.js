@@ -12,9 +12,9 @@ function App() {
 
   const controller = this;
 
-  const inputName = $('#student-name');
-  const inputCourse = $('#course');
-  const inputGrade = $('#student-grade');
+  const $inputName = $('#student-name');
+  const $inputCourse = $('#course');
+  const $inputGrade = $('#student-grade');
 
   this.model = new Model(this);
   this.view = new View(this);
@@ -27,7 +27,7 @@ function App() {
   /*=======================================================
    MODEL
    =======================================================*/
-  function Model(controller) {
+  function Model() {
     this.studentArray = [];
 
     /**
@@ -192,34 +192,34 @@ function App() {
     this.addButtonClicked = function() {
 
       // if there isn't anything in the name field, we know to throw an error.
-      if ($.trim(inputName.val()) === '') {
+      if ($.trim($inputName.val()) === '') {
         controller.view.generateErrorModal('Please confirm all fields are filled out correctly and try adding again.');
         return;
       }
 
       // if there isn't anything in the course field, we know to throw an error.
-      if ($.trim(inputCourse.val()) === '') {
+      if ($.trim($inputCourse.val()) === '') {
         controller.view.generateErrorModal('Please confirm all fields are filled out correctly and try adding again.');
         return;
       }
 
       // quit this function if the grade input isn't a number
-      if (isNaN(parseInt(inputGrade.val()))) {
+      if (isNaN(parseInt($inputGrade.val()))) {
         controller.view.generateErrorModal('Please enter a Student Grade. It must be a number between 0 and 100!');
         return;
       }
 
       // assuming it's a number, check to see if it's between 0 and 100
-      if (parseInt(inputGrade.val()) > 100 || parseInt(inputGrade.val()) < 0) {
+      if (parseInt($inputGrade.val()) > 100 || parseInt($inputGrade.val()) < 0) {
         controller.view.generateErrorModal('Student Grade must be a number between 0 and 100. (Overachieving students with scores above 100 are not tolerated around here.)');
         return;
       }
 
       // create an object that we'll pass into our addStudent function
       const student = {
-        name: inputName.val(),
-        course: inputCourse.val(),
-        grade: inputGrade.val()
+        name: $inputName.val(),
+        course: $inputCourse.val(),
+        grade: $inputGrade.val()
       };
 
       console.log('this',$(this));
@@ -249,18 +249,22 @@ function App() {
 
     /**
      * cancelClicked - Event Handler when user clicks the cancel button, should clear out student form
+     *                 and also reset it from "edit" back to "add" status if needed
      */
     this.cancelClicked = function() {
       controller.view.clearAddStudentForm();
+      $(this).removeAttr('editing').removeAttr('local-array-index');
+      $(this).text('Add');
+      $('#student-add-form-title').text('Add Student');
     };
 
     /**
      * clearAddStudentForm - clears out the form values based on inputIds variable
      */
     this.clearAddStudentForm = function() {
-      inputName.val('');
-      inputCourse.val('');
-      inputGrade.val('');
+      $inputName.val('');
+      $inputCourse.val('');
+      $inputGrade.val('');
     };
 
     /**
@@ -335,7 +339,7 @@ function App() {
     };
 
     this.generateErrorModal = function(error_message) {
-      const modal = $("#modalError");
+      const modal = $('#modal-error');
       modal.find('.modal-body p').text(error_message);
       modal.modal('show');
     };
