@@ -41,12 +41,12 @@
       <span class="input-group-addon" id="input-grade">
         <span class="glyphicon glyphicon-education"></span>
       </span>
-      <input type="text" class="form-control" name="student-grade" id="student-grade" placeholder="Student Grade"
+      <input type="number" class="form-control" name="student-grade" id="student-grade" placeholder="Student Grade"
              aria-describedby="input-grade" value="80">
     </div>
     <div class="form-group sgt-buttons">
       <button type="button" class="btn btn-success" onclick="" id="add-student">Add</button>
-      <button type="button" class="btn btn-default" onclick="" id="cancel-add-student">Clear</button>
+      <button type="button" class="btn btn-default" onclick="" id="clear-add-form">Clear</button>
       <!--<button type="button" class="btn btn-primary" onclick="" id="get-data-from-server">Refresh Data </button>-->
     </div>
   </div>
@@ -98,30 +98,34 @@
         <h2 class="modal-title">Edit Student</h2>
       </div>
       <div class="modal-body">
-        <div class="input-group col-sm-12 form-group">
+        <div id="student-edit-form">
+          <div class="input-group col-sm-12 form-group">
           <span class="input-group-addon" id="edit-input-user">
             <span class="glyphicon glyphicon-user"></span>
           </span>
-          <input type="text" class="form-control" name="edit-student-name" id="edit-student-name" placeholder="Student Name"
-                 aria-describedby="input-user">
-        </div>
-        <div class="input-group col-sm-12 form-group">
+            <input type="text" class="form-control" name="edit-student-name" id="edit-student-name"
+                   placeholder="Student Name"
+                   aria-describedby="input-user">
+          </div>
+          <div class="input-group col-sm-12 form-group">
           <span class="input-group-addon" id="edit-input-course">
             <span class="glyphicon glyphicon-list-alt"></span>
           </span>
-          <input type="text" class="form-control" name="edit-course" id="edit-course" placeholder="Student Course"
-                 aria-describedby="input-course">
-        </div>
-        <div class="input-group col-sm-12 form-group">
+            <input type="text" class="form-control" name="edit-course" id="edit-course" placeholder="Student Course"
+                   aria-describedby="input-course">
+          </div>
+          <div class="input-group col-sm-12 form-group">
           <span class="input-group-addon" id="edit-input-grade">
             <span class="glyphicon glyphicon-education"></span>
           </span>
-          <input type="text" class="form-control" name="edit-student-grade" id="edit-student-grade" placeholder="Student Grade"
-                 aria-describedby="input-grade">
-        </div>
-        <div class="form-group sgt-buttons">
-          <button type="button" class="btn btn-success" onclick="" id="update-student">Update</button>
-          <button type="button" class="btn btn-default" onclick="" id="cancel-update-student">Clear</button>
+            <input type="number" class="form-control" name="edit-student-grade" id="edit-student-grade"
+                   placeholder="Student Grade"
+                   aria-describedby="input-grade">
+          </div>
+          <div class="form-group sgt-buttons">
+            <button type="button" class="btn btn-success" id="update-student">Update</button>
+            <button type="button" class="btn btn-default" id="clear-edit-form">Clear</button>
+          </div>
         </div>
       </div>
       <div class="modal-footer">

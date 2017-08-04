@@ -44,6 +44,7 @@ if (mysqli_affected_rows($conn)) {
 $statement->close();
 $conn->close();
 
+sleep(1);
 print(json_encode($output));
 
 ?>

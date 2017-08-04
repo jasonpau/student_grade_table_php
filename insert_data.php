@@ -34,6 +34,7 @@ if (mysqli_affected_rows($conn)) {
   $output['message'] = 'Unable to insert data.';
 }
 
+sleep(1);
 print(json_encode($output));
 
 ?>
