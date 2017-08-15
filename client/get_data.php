@@ -6,7 +6,7 @@ $output = [
   'success' => false
 ];
 
-require_once('mysql_connect.php');
+require_once('../mysql_connect.php');
 require_once('mysql_conn_error_handler.php');
 
 $query = "
@@ -21,6 +21,8 @@ $result = mysqli_query($conn, $query);
 
 if (mysqli_num_rows($result) > 0) {
   while ($row = mysqli_fetch_assoc($result)) {
+    $row['id'] = intval($row['id']);
+    $row['grade'] = intval($row['grade']);
     $output['data'][] = $row;
   }
   $output['message'] = 'Data received from database!';

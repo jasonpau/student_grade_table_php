@@ -6,7 +6,7 @@ $output = [
   'success' => false
 ];
 
-require_once('mysql_connect.php');
+require_once('../mysql_connect.php');
 require_once('mysql_conn_error_handler.php');
 
 // grab the submitted id, convert it to an integer (or 0 if it is unable)

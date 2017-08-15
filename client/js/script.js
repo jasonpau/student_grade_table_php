@@ -1,17 +1,18 @@
 "use strict";
 
-/**
- * Define all global variables here
- */
 let app = null;
+
+/* console.log shortcut */
+function cl(variable) {
+  console.log(variable);
+}
 
 /*=======================================================
  CONTROLLER
  =======================================================*/
 function App() {
 
-  //const controller = this;
-
+  // storing frequently used jQuery selectors for more efficient use
   const $inputName = $('#student-name');
   const $inputCourse = $('#course');
   const $inputGrade = $('#student-grade');
@@ -20,6 +21,7 @@ function App() {
   const $editInputCourse = $('#edit-course');
   const $editInputGrade = $('#edit-student-grade');
 
+  // create the model and view objects
   this.model = new Model(this);
   this.view = new View(this);
 
@@ -48,15 +50,7 @@ function App() {
         timeout: 5000,
         data: data,
         url: url
-      })
-        .always(function(ajaxResponse) {
-          controller.view.handlePossibleError(ajaxResponse);
-        })
-        .fail(function() {
-          // if we can't connect with our API
-          controller.view.generateErrorModal('It seems there was a server error of some kind! Refresh the page and try again. If the issue persists, contact the website administrator at dev@jasonpau.com.');
-          controller.view.showTableMessage('Unable to connect to server.');
-        });
+      });
     };
 
     /**
@@ -65,55 +59,44 @@ function App() {
      * @returns {object} jquery XMLHttpRequest object
      */
     this.getDataFromServer = function() {
-      return controller.model.connectWithServer('get_data.php', null).done(function(ajaxResponse) {
+      controller.model.connectWithServer('get_data.php', null)
+        .fail(() => {
+          controller.view.showConnectionErrorMessage();
+          // controller.view.reenableButton($(this));
+        })
+        .done(function(ajaxResponse) {
+          if (controller.view.handleServerErrors(ajaxResponse)) return;
 
-        // if we aren't able to connect to the database, throw and error and return
-        //if (controller.view.handlePossibleError(ajaxResponse)) return;
+          // if we're able to connect to the database, but there are no students in the DB
+          if (!ajaxResponse.hasOwnProperty('data')) {
+            controller.view.showTableMessage(ajaxResponse.message);
+            return;
+          } // TODO maybe change success false if no students, so handle server errors works as-is?
 
-        // if we're able to connect to the database, but there is no data...
-        if (!ajaxResponse.hasOwnProperty('data')) {
-          controller.view.showTableMessage(ajaxResponse.message);
-          return;
-        }
-
-        // wipe the local student array and build a fresh copy, then trigger the view to update
-        controller.model.studentArray = [];
-        ajaxResponse.data.forEach(function({id, name, course, grade}) {
-          const studentObj = {
-            id: id,
-            name: name,
-            course: course,
-            grade: grade
-          };
-          controller.model.addStudentLocally(studentObj);
-        });
-        controller.view.updateData();
-      });
+          // wipe the local student array and build a fresh copy, then trigger the view to update
+          controller.model.studentArray = [];
+          ajaxResponse.data.forEach(function({id, name, course, grade}) {
+            const studentObj = {
+              id: id,
+              name: name,
+              course: course,
+              grade: grade
+            };
+            controller.model.studentArray.push(studentObj);
+          });
+          controller.view.updateDom();
+        })
     };
 
     /**
      * addStudentToServer - send an individual student's data to our AJAX call function
-     * If the AJAX call is successful, clear add form and add the new student to local array
      *
      * @params {object} studentObj
      * @returns {object} jquery XMLHttpRequest object
      */
-    this.addStudentToServer = function(studentObj) {
-      return controller.model.connectWithServer('insert_data.php', studentObj).done(function(ajaxResponse) {
-        //if (controller.view.handlePossibleError(ajaxResponse)) return;
-        studentObj.id = ajaxResponse.new_id;
-        controller.model.addStudentLocally(studentObj);
-      });
-    };
-
-    /**
-     * addStudentLocally - creates a student object based on input fields in the form and adds the object to the main student array
-     *
-     * @return undefined
-     */
-    this.addStudentLocally = function(studentObj) {
-      controller.model.studentArray.push(studentObj);
-    };
+    // this.addStudentToServer = function(studentObj) {
+    //   return controller.model.connectWithServer('insert_data.php', studentObj);
+    // };
 
     /**
      * editStudentOnServer - send an individual student's data to our AJAX call function
@@ -122,17 +105,9 @@ function App() {
      * @params {string, object, number}
      * @returns {object}
      */
-    this.editStudentOnServer = function({id, name, course, grade}) {
-      const data = {
-        id: id,
-        name: name,
-        course: course,
-        grade: grade
-      };
-      return controller.model.connectWithServer('edit_data.php', data).done(function(ajaxResponse) {
-        //if (controller.view.handlePossibleError(ajaxResponse)) return;
-      });
-    };
+    // this.editStudentOnServer = function(studentObj) {
+    //   return controller.model.connectWithServer('edit_data.phpasdf', studentObj);
+    // };
 
     /**
      * removeStudentFromServer - send an individual student's id to our delete API
@@ -141,12 +116,9 @@ function App() {
      * @param {number} studentId - id of student we want to delete
      * @returns {object} jQuery XMLHttpRequest object
      */
-    this.removeStudentFromServer = function(studentId) {
-      const data = {id: studentId};
-      return controller.model.connectWithServer('delete_data.php', data).done(function(ajaxResponse) {
-        //if (controller.view.handlePossibleError(ajaxResponse)) return;
-      });
-    };
+    // this.removeStudentFromServer = function(studentId) {
+    //   return controller.model.connectWithServer('delete_data.php', {id: studentId});
+    // };
 
     /**
      * calculateAverage - loop through the global student array and calculate average grade and return that value
@@ -176,93 +148,144 @@ function App() {
       $('#clear-edit-form').on('click', controller.view.clearEdit);
     };
 
-    this.handlePossibleError = function(ajaxResponse) {
-      if (ajaxResponse.success === false) {
-        controller.view.generateErrorModal(ajaxResponse.message);
-        controller.view.showTableMessage(ajaxResponse.message);
-        //return true;
-      }
-    };
-
     /**
      * addStudent - Event Handler when user clicks the add button
      */
-    this.addStudent = function(event) {
-
-      // if there isn't anything in the name field, we know to throw an error.
-      if ($.trim($inputName.val()) === '') {
-        controller.view.generateErrorModal('Please confirm all fields are filled out correctly and try adding again.');
-        return;
-      }
-
-      // if there isn't anything in the course field, we know to throw an error.
-      if ($.trim($inputCourse.val()) === '') {
-        controller.view.generateErrorModal('Please confirm all fields are filled out correctly and try adding again.');
-        return;
-      }
-
-      // quit this function if the grade input isn't a number
-      if (isNaN(parseInt($inputGrade.val()))) {
-        controller.view.generateErrorModal('Please enter a Student Grade. It must be a number between 0 and 100!');
-        return;
-      }
-
-      // assuming it's a number, check to see if it's between 0 and 100
-      if (parseInt($inputGrade.val()) > 100 || parseInt($inputGrade.val()) < 0) {
-        controller.view.generateErrorModal('Student Grade must be a number between 0 and 100. (Overachieving students with scores above 100 are not tolerated around here.)');
-        return;
-      }
+    this.addStudent = function() {
 
       const student = {
         name: $inputName.val(),
         course: $inputCourse.val(),
-        grade: $inputGrade.val()
+        grade: parseInt($inputGrade.val())
       };
 
+      if (controller.view.validateInputs(student)) {
+        return;
+      }
+
       controller.view.tempDisableButton($(this));
-      controller.model.addStudentToServer(student).then(() => {
-        controller.view.updateData();
-        controller.view.clearAdd();
-        controller.view.reenableButton($(this));
-      });
-      // }
+
+      controller.model.connectWithServer('insert_data.php', student)
+        .fail(() => {
+          controller.view.showConnectionErrorMessage();
+          controller.view.reenableButton($(this));
+        })
+        .done((ajaxResponse) => {
+          if (controller.view.handleServerErrors(ajaxResponse)) { // TODO break out into separate function?
+            controller.view.reenableButton($(this));
+            return;
+          }
+          student.id = ajaxResponse.new_id;
+          controller.model.studentArray.push(student); // TODO break out into separate function?
+          controller.view.updateDom();
+          controller.view.clearAdd();
+          controller.view.reenableButton($(this));
+        });
     };
 
     /**
-     * editStudent - event handler that takes the event object and...
+     * editStudent - set up the edit modal in preparation for the actual updateStudent function
      */
     this.editStudent = function(event) {
-      // get the student id and table row number and add that data to our edit form for easy access
-      const localArrayIndex = $(event.target).parents('tr').index();
-
-      // grab the student data and populate our edit form with it
-      const studentData = controller.view.getRowData($(event.target.parentElement.parentElement));
+      const $targetRow = $(event.target.parentElement.parentElement);
+      const studentData = controller.view.getRowData($targetRow);
       controller.view.populateEditModal(studentData);
-
-      // TODO send local array index to modal too?
-
       $('#modal-edit').modal('show');
     };
 
     this.updateStudent = function(event) {
-      const editingStudentId = event.target.getAttribute('student-id');
+      const editingStudentId = parseInt(event.target.getAttribute('student-id'));
       const student = {
         id: editingStudentId,
         name: $editInputName.val(),
         course: $editInputCourse.val(),
-        grade: $editInputGrade.val()
+        grade: parseInt($editInputGrade.val())
       };
 
+      if (controller.view.validateInputs(student)) {
+        return;
+      }
+
       controller.view.tempDisableButton($(this));
-      controller.model.editStudentOnServer(student).then(() => {
-        // update the same student in the local array
-        const indexToEdit = controller.model.studentArray.map(student => student.id).indexOf(editingStudentId);
-        controller.model.studentArray[indexToEdit] = student;
-        controller.view.updateData();
-        controller.view.clearEdit();
-        controller.view.reenableButton($(this));
-        $('#modal-edit').modal('hide');
-      });
+      controller.model.connectWithServer('edit_data.php', student)
+        .fail(() => {
+          controller.view.showConnectionErrorMessage();
+          controller.view.reenableButton($(this));
+        })
+        .done((ajaxResponse) => {
+          if (controller.view.handleServerErrors(ajaxResponse)) return;
+
+          // update the same student in the local array
+          const indexToEdit = controller.model.studentArray.map(student => student.id).indexOf(editingStudentId);
+          controller.model.studentArray[indexToEdit] = student;
+          controller.view.updateDom();
+          controller.view.clearEdit();
+          controller.view.reenableButton($(this));
+          $('#modal-edit').modal('hide');
+        });
+    };
+
+    /**
+     * deleteStudent - deletes the appropriate student in the array and updates the DOM
+     */
+    this.deleteStudent = function() {
+      // get the studentId of the one we clicked
+      const studentId = parseInt($(this).attr('student-id'));
+
+      // disable the button, remove the student from the server then local data, then reenable button (if deletion unsuccessful)
+      controller.view.tempDisableButton($(this));
+      controller.model.connectWithServer('delete_data.php', {id: studentId})
+        .fail(() => {
+          controller.view.showConnectionErrorMessage();
+          controller.view.reenableButton($(this));
+        })
+        .done((ajaxResponse) => {
+          if (controller.view.handleServerErrors(ajaxResponse)) return;
+
+          // delete the same student from the local array, then update the dom
+          const indexToDelete = controller.model.studentArray.map(student => student.id).indexOf(studentId);
+          controller.model.studentArray.splice(indexToDelete, 1);
+
+          controller.view.updateDom();
+          controller.view.reenableButton($(this));
+        });
+    };
+
+    this.validateInputs = function({name, course, grade}) {
+      if ($.trim(name) === '') {
+        controller.view.generateErrorModal('Please confirm all fields are filled out correctly and try adding again.');
+        return true;
+      }
+      if ($.trim(course) === '') {
+        controller.view.generateErrorModal('Please confirm all fields are filled out correctly and try adding again.');
+        return true;
+      }
+      if (isNaN(grade)) {
+        controller.view.generateErrorModal('Please enter a Student Grade. It must be a number between 0 and 100!');
+        return true;
+      }
+      if (isNaN(grade) || parseInt(grade) > 100 || parseInt(grade) < 0) {
+        controller.view.generateErrorModal('Student Grade must be a number between 0 and 100. (Overachieving students with scores above 100 are not tolerated around here.)');
+        return true;
+      }
+    };
+
+    this.handleServerErrors = function(ajaxResponse) {
+      if (ajaxResponse.success === false) {
+        controller.view.generateErrorModal(ajaxResponse.message);
+        //controller.view.showTableMessage(ajaxResponse.message);
+        return true;
+      } else {
+        return false;
+      }
+    };
+
+    this.showConnectionErrorMessage = function(buttonClicked) {
+      if (buttonClicked === undefined) {
+        controller.view.showTableMessage('Unable to connect to server.');
+      }
+      // if we can't connect with our API, let the user know
+      controller.view.generateErrorModal('It seems there was a server error of some kind! Refresh the page and try again. If the issue persists, contact the website administrator at dev@jasonpau.com.');
     };
 
     this.clearAdd = function() {
@@ -299,25 +322,6 @@ function App() {
       $('#update-student').attr('student-id', id);
     };
 
-    /**
-     * deleteStudent - deletes the appropriate student in the array and updates the DOM
-     */
-    this.deleteStudent = function() {
-      // get the studentId of the one we clicked
-      const studentId = parseInt($(this).attr('student-id'));
-
-      // disable the button, remove the student from the server then local data, then reenable button (if deletion unsuccessful)
-      controller.view.tempDisableButton($(this));
-      controller.model.removeStudentFromServer(studentId).then(() => {
-
-        // delete the same student from the local array, then update the dom
-        const indexToDelete = controller.model.studentArray.map(student => student.id).indexOf(studentId.toString());
-        controller.model.studentArray.splice(indexToDelete, 1);
-        controller.view.updateData();
-        controller.view.reenableButton($(this));
-      });
-    };
-
     this.tempDisableButton = function(clickedObj) {
       const $loading_indicator = $('<div>', {class: 'loading-spinner'});
       clickedObj.attr('disabled', 'disabled').append($loading_indicator);
@@ -334,9 +338,9 @@ function App() {
     };
 
     /**
-     * updateData - centralized function to update the average and call student list update
+     * updateDom - centralized function to update the average and call student list update
      */
-    this.updateData = function() {
+    this.updateDom = function() {
       // calculate the average grade and update it in the DOM
       $('.avgGrade').text(controller.model.calculateAverage());
       this.updateStudentList();
@@ -354,24 +358,6 @@ function App() {
           controller.view.addStudentToDom(student);
         });
       }
-    };
-
-    /**
-     * showConnectionError - display connection error message in student list table
-     */
-    this.showTableMessage = function(message) {
-      const $table = $('.student-list tbody');
-      $table.empty();
-
-      const $row = $('<tr>');
-      const $cell = $('<td>').attr('colspan', '4');
-      const $loader = $('<div>', {
-        text: message
-      });
-
-      $cell.append($loader);
-      $row.append($cell);
-      $table.append($row);
     };
 
     /**
@@ -403,6 +389,25 @@ function App() {
       $cellDelete.append($buttonEdit, $buttonDelete);
       $row.append($cellName, $cellCourse, $cellGrade, $cellDelete);
       $('.student-list').append($row);
+    };
+
+
+    /**
+     * showTableMessage - display error message in student list table
+     */
+    this.showTableMessage = function(message) {
+      const $table = $('.student-list tbody');
+      $table.empty();
+
+      const $row = $('<tr>');
+      const $cell = $('<td>').attr('colspan', '4');
+      const $loader = $('<div>', {
+        text: message
+      });
+
+      $cell.append($loader);
+      $row.append($cell);
+      $table.append($row);
     };
   }
 }
