@@ -6,7 +6,8 @@ $output = [
   'success' => false
 ];
 
-require_once('mysql_connect.php');
+// establish connection with our database
+require_once('../mysql_connect.php');
 require_once('mysql_conn_error_handler.php');
 
 // grab the submitted data, trim leading/trailing whitespace, sanitize, and store in variables for easy access
