@@ -83,6 +83,12 @@
   z-index: 1100;
 }
 
+.fade {
+  -webkit-transition: opacity .075s linear;
+  -o-transition: opacity .075s linear;
+  transition: opacity .075s linear;
+}
+
 @-webkit-keyframes spin {
   0% {
     -webkit-transform: rotate(0deg);
@@ -98,5 +104,12 @@
   }
   100% {
     transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    padding-left: 0;
+    padding-right: 0;
   }
 }
