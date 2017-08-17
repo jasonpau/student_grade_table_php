@@ -32,7 +32,6 @@ if (mysqli_num_rows($result) > 0) {
   $output['success'] = true;
 }
 
-sleep(1);
 print(json_encode($output));
 
 ?>
