@@ -1,3 +1,4 @@
 .DS_Store
 .idea
 mysql_connect.php
+client/reset_data.php
